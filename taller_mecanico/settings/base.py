@@ -34,6 +34,7 @@ LOCAL_APPS = [
     'apps.service_orders',
     'apps.diagnostics',
     'apps.shared_views',
+    'apps.finances',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -57,6 +58,9 @@ TEMPLATES = [
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
+            'libraries': {
+                'format_filters': 'apps.core.templatetags.format_filters',
+            },
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',

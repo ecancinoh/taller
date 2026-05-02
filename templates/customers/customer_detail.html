@@ -64,7 +64,7 @@
         <div class="d-flex align-items-center justify-content-between p-3 border-bottom">
           <div>
             <div class="fw-semibold">{{ vehicle }}</div>
-            {% if vehicle.license_plate %}<small class="text-muted">{{ vehicle.license_plate }}</small>{% endif %}
+            {% if vehicle.license_plate %}<small class="text-muted">{{ vehicle.license_plate|upper }}</small>{% endif %}
           </div>
           <div class="d-flex gap-1">
             <a href="{% url 'vehicles:detail' vehicle.pk %}" class="btn btn-sm btn-outline-primary">

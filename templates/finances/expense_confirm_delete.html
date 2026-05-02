@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load format_filters %}
+
+{% block title %}Eliminar gasto{% endblock %}
+
+{% block active_finances %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-trash me-2"></i>Eliminar gasto
+    </h1>
+    <a href="{% url 'finances:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6">
+      <div class="card shadow border-danger">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-exclamation-triangle text-danger fs-1 mb-3 d-block"></i>
+          <h5 class="mb-1">¿Eliminar este gasto?</h5>
+          <p class="text-muted mb-1">
+            <strong>{{ object.category }}</strong> — {{ object.description }}
+          </p>
+          <p class="text-danger fw-bold mb-4">${{ object.amount|thousands_dot }} &middot; {{ object.date }}</p>
+          <form method="post" class="d-flex gap-2 justify-content-center">
+            {% csrf_token %}
+            <a href="{% url 'finances:dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash me-1"></i>Sí, eliminar
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -5,9 +5,14 @@
 {% block page_heading %}
 <div class="d-flex align-items-center justify-content-between mb-4">
   <h1 class="h3 mb-0 text-gray-800"><i class="bi bi-people me-2"></i>Clientes</h1>
-  <a href="{% url 'customers:create' %}" class="btn btn-primary shadow-sm">
-    <i class="bi bi-plus-lg me-1"></i> Nuevo cliente
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'customers:import_contacts' %}" class="btn btn-outline-primary shadow-sm">
+      <i class="bi bi-upload me-1"></i> Importar contactos
+    </a>
+    <a href="{% url 'customers:create' %}" class="btn btn-primary shadow-sm">
+      <i class="bi bi-plus-lg me-1"></i> Nuevo cliente
+    </a>
+  </div>
 </div>
 {% endblock %}
 

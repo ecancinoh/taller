@@ -14,3 +14,16 @@ class CustomerForm(forms.ModelForm):
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Dirección'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notas adicionales'}),
         }
+
+
+class CustomerImportForm(forms.Form):
+    file = forms.FileField(
+        label='Archivo de contactos',
+        help_text='Formatos soportados: .csv y .vcf',
+        widget=forms.ClearableFileInput(
+            attrs={
+                'class': 'form-control',
+                'accept': '.csv,.vcf,text/csv,text/x-vcard,text/vcard',
+            }
+        ),
+    )

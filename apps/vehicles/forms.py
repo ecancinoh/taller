@@ -12,7 +12,14 @@ class VehicleForm(forms.ModelForm):
             'brand': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Toyota, Chevrolet...'}),
             'model': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Corolla, Spark...'}),
             'year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '2020', 'min': 1900, 'max': 2100}),
-            'license_plate': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ABCD12'}),
+            'license_plate': forms.TextInput(
+                attrs={
+                    'class': 'form-control text-uppercase',
+                    'placeholder': 'ABCD12',
+                    'autocapitalize': 'characters',
+                    'spellcheck': 'false',
+                }
+            ),
             'vin': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'VIN / Número de serie'}),
             'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Blanco, Negro...'}),
             'engine': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1.6L, 2.0T...'}),
@@ -24,3 +31,7 @@ class VehicleForm(forms.ModelForm):
         if customer_id:
             self.fields['customer'].initial = customer_id
         self.fields['customer'].queryset = Customer.objects.order_by('last_name', 'first_name')
+
+    def clean_license_plate(self):
+        value = self.cleaned_data.get('license_plate', '')
+        return value.strip().upper()

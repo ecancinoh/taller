@@ -28,6 +28,8 @@ urlpatterns = [
     path('clientes/', include('apps.customers.urls', namespace='customers')),
     path('vehiculos/', include('apps.vehicles.urls', namespace='vehicles')),
     path('ordenes/', include('apps.service_orders.urls', namespace='service_orders')),
+    path('diagnosticos/', include('apps.diagnostics.urls', namespace='diagnostics')),
     path('p/', include('apps.shared_views.urls', namespace='shared_views')),
+    path('finanzas/', include('apps.finances.urls', namespace='finances')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static format_filters %}
+
+{% block title %}Finanzas — {{ mes_nombre }} {{ year }}{% endblock %}
+
+{% block active_finances %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Page Heading -->
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-cash-stack me-2"></i>Gestión Financiera
+    </h1>
+    <a href="{% url 'finances:expense_create' %}" class="btn btn-success btn-sm shadow-sm">
+      <i class="bi bi-plus-circle me-1"></i> Nuevo Gasto
+    </a>
+  </div>
+
+  <!-- Filtro de período -->
+  <div class="card shadow mb-4">
+    <div class="card-body py-2">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <label class="form-label mb-1 small fw-semibold">Mes</label>
+          <select name="month" class="form-select form-select-sm">
+            {% for num, nombre in meses %}
+            <option value="{{ num }}" {% if num == month %}selected{% endif %}>{{ nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label mb-1 small fw-semibold">Año</label>
+          <select name="year" class="form-select form-select-sm">
+            {% for y in years %}
+            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100">
+            <i class="bi bi-funnel me-1"></i>Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tarjetas resumen -->
+  <div class="row g-3 mb-4 finance-kpi-grid">
+
+    <!-- Ingresos totales -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-success mb-1 finance-kpi-title">Ingresos</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800 finance-kpi-amount">${{ ingreso_total|thousands_dot }}</div>
+              <small class="text-muted">
+                Repuestos ${{ ingresos_repuestos|thousands_dot }} &middot;
+                M.O. ${{ ingresos_mano_obra|thousands_dot }}
+              </small>
+            </div>
+            <div class="col-auto finance-kpi-icon"><i class="bi bi-arrow-up-circle fs-4 text-success"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Costos de compra -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-warning mb-1 finance-kpi-title">Costos compra</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800 finance-kpi-amount">${{ costos_repuestos|thousands_dot }}</div>
+              <small class="text-muted">Costo M.O. ${{ costos_mano_obra|thousands_dot }}</small>
+            </div>
+            <div class="col-auto finance-kpi-icon"><i class="bi bi-box-seam fs-4 text-warning"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gastos adicionales -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card border-left-danger shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-danger mb-1 finance-kpi-title">Gastos adicionales</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800 finance-kpi-amount">${{ total_gastos|thousands_dot }}</div>
+              <small class="text-muted">{{ gastos_mes.count }} gasto{{ gastos_mes.count|pluralize:"s" }}</small>
+            </div>
+            <div class="col-auto finance-kpi-icon"><i class="bi bi-receipt fs-4 text-danger"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ganancia neta -->
+    <div class="col-12 col-sm-6 col-lg-3">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary mb-1 finance-kpi-title">Ganancia neta</div>
+              <div class="h5 mb-0 font-weight-bold finance-kpi-amount {% if ganancia_neta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                ${{ ganancia_neta|thousands_dot }}
+              </div>
+              <small class="text-muted">Bruta ${{ ganancia_bruta|thousands_dot }}</small>
+            </div>
+            <div class="col-auto finance-kpi-icon">
+              <i class="bi bi-{% if ganancia_neta >= 0 %}graph-up-arrow text-success{% else %}graph-down-arrow text-danger{% endif %} fs-4"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="row g-3">
+
+    <!-- Órdenes del mes -->
+    <div class="col-12 col-xl-7">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-primary">
+            <i class="bi bi-clipboard2-check me-1"></i>Órdenes del mes
+          </h6>
+          <span class="badge bg-primary">{{ ordenes_mes.count }}</span>
+        </div>
+        <div class="card-body p-0">
+
+          {% if ordenes_mes %}
+
+          <!-- Mobile: tarjetas -->
+          <div class="d-md-none">
+            {% for orden in ordenes_mes %}
+            <div class="border-bottom p-3">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <a href="{% url 'service_orders:detail' orden.pk %}" class="fw-semibold text-decoration-none">
+                    #{{ orden.pk }} — {{ orden.vehicle.license_plate|upper }}
+                  </a>
+                  <div class="small text-muted">{{ orden.vehicle.customer.full_name }} · {{ orden.service_date }}</div>
+                </div>
+                {% include 'partials/status_badge.html' with status=orden.status %}
+              </div>
+              <div class="row mt-2 text-center small">
+                <div class="col-4">
+                  <div class="text-muted">Ingreso</div>
+                  <div class="fw-bold text-success">${{ orden.grand_total|thousands_dot }}</div>
+                </div>
+                <div class="col-4">
+                  <div class="text-muted">Costo partes</div>
+                  <div class="fw-bold text-warning">${{ orden.total_parts|thousands_dot }}</div>
+                </div>
+                <div class="col-4">
+                  <div class="text-muted">Mano obra</div>
+                  <div class="fw-bold">${{ orden.total_labor|thousands_dot }}</div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Desktop: tabla -->
+          <div class="d-none d-md-block">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Vehículo / Cliente</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Ingreso total</th>
+                    <th class="text-end">Costo repuestos</th>
+                    <th class="text-end">Mano de obra</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for orden in ordenes_mes %}
+                  <tr>
+                    <td>
+                      <a href="{% url 'service_orders:detail' orden.pk %}" class="fw-semibold text-decoration-none">
+                        #{{ orden.pk }}
+                      </a>
+                    </td>
+                    <td>
+                      <div>{{ orden.vehicle.license_plate|upper }}</div>
+                      <small class="text-muted">{{ orden.vehicle.customer.full_name }}</small>
+                    </td>
+                    <td>{{ orden.service_date }}</td>
+                    <td class="text-end text-success fw-semibold">${{ orden.grand_total|thousands_dot }}</td>
+                    <td class="text-end">${{ orden.total_parts|thousands_dot }}</td>
+                    <td class="text-end">${{ orden.total_labor|thousands_dot }}</td>
+                    <td>{% include 'partials/status_badge.html' with status=orden.status %}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            No hay órdenes registradas en este período.
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Gastos adicionales -->
+    <div class="col-12 col-xl-5">
+      <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex align-items-center justify-content-between">
+          <h6 class="m-0 font-weight-bold text-danger">
+            <i class="bi bi-receipt me-1"></i>Gastos adicionales
+          </h6>
+          <a href="{% url 'finances:expense_create' %}" class="btn btn-danger btn-sm">
+            <i class="bi bi-plus me-1"></i>Nuevo
+          </a>
+        </div>
+        <div class="card-body p-0">
+
+          {% if gastos_mes %}
+
+          <!-- Mobile: tarjetas -->
+          <div class="d-md-none">
+            {% for gasto in gastos_mes %}
+            <div class="border-bottom p-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-secondary me-1">{{ gasto.category }}</span>
+                  <span class="small">{{ gasto.description }}</span>
+                  <div class="text-muted small">{{ gasto.date }}</div>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold text-danger">${{ gasto.amount|thousands_dot }}</div>
+                  <div class="d-flex gap-1 mt-1">
+                    <a href="{% url 'finances:expense_update' gasto.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'finances:expense_delete' gasto.pk %}" class="btn btn-outline-danger btn-sm py-0 px-1">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Desktop: tabla -->
+          <div class="d-none d-md-block">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Categoría</th>
+                    <th>Descripción</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Monto</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for gasto in gastos_mes %}
+                  <tr>
+                    <td><span class="badge bg-secondary">{{ gasto.category }}</span></td>
+                    <td>{{ gasto.description }}</td>
+                    <td>{{ gasto.date }}</td>
+                    <td class="text-end text-danger fw-semibold">${{ gasto.amount|thousands_dot }}</td>
+                    <td class="text-end">
+                      <a href="{% url 'finances:expense_update' gasto.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-2">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      <a href="{% url 'finances:expense_delete' gasto.pk %}" class="btn btn-outline-danger btn-sm py-0 px-2">
+                        <i class="bi bi-trash"></i>
+                      </a>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <td colspan="3" class="fw-bold text-end">Total gastos:</td>
+                    <td class="text-end fw-bold text-danger">${{ total_gastos|thousands_dot }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+            No hay gastos adicionales en este período.
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

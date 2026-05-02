@@ -47,6 +47,14 @@
     </a>
   </li>
 
+  <!-- Finanzas -->
+  <li class="nav-item {% block active_finances %}{% endblock %}">
+    <a class="nav-link" href="{% url 'finances:dashboard' %}">
+      <i class="bi bi-cash-stack"></i>
+      <span>Finanzas</span>
+    </a>
+  </li>
+
   <!-- Solo Admin -->
   {% if user.is_admin %}
   <hr class="sidebar-divider">

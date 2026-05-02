@@ -24,10 +24,15 @@ class Vehicle(TimeStampedModel):
         verbose_name_plural = 'Vehículos'
         ordering = ['brand', 'model']
 
+    def save(self, *args, **kwargs):
+        if self.license_plate:
+            self.license_plate = self.license_plate.strip().upper()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         parts = [self.brand, self.model]
         if self.year:
             parts.append(str(self.year))
         if self.license_plate:
-            parts.append(f'[{self.license_plate}]')
+            parts.append(f'[{self.license_plate.upper()}]')
         return ' '.join(parts)

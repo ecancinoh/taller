@@ -19,13 +19,19 @@ class CustomUser(AbstractUser):
         verbose_name = 'Usuario'
         verbose_name_plural = 'Usuarios'
 
+    def save(self, *args, **kwargs):
+        # Garantiza consistencia: cualquier superusuario debe tener rol ADMIN.
+        if self.is_superuser:
+            self.role = self.Role.ADMIN
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f'{self.get_full_name() or self.username} ({self.get_role_display()})'
 
     @property
     def is_admin(self):
-        return self.role == self.Role.ADMIN
+        return self.is_superuser or self.role == self.Role.ADMIN
 
     @property
     def is_mechanic(self):
-        return self.role == self.Role.MECHANIC
+        return (not self.is_superuser) and self.role == self.Role.MECHANIC

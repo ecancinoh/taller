@@ -1,0 +1,1 @@
+web: gunicorn taller_mecanico.wsgi:application --log-file -

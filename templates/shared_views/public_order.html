@@ -33,7 +33,7 @@
         <dd class="col-7 fw-semibold">{{ order.vehicle }}</dd>
         {% if order.vehicle.license_plate %}
         <dt class="col-5 text-muted">Patente</dt>
-        <dd class="col-7">{{ order.vehicle.license_plate }}</dd>
+        <dd class="col-7">{{ order.vehicle.license_plate|upper }}</dd>
         {% endif %}
         {% if order.vehicle.color %}
         <dt class="col-5 text-muted">Color</dt>

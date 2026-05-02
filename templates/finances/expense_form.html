@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block active_finances %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-receipt me-2"></i>{{ titulo }}
+    </h1>
+    <a href="{% url 'finances:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+      <div class="card shadow">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              {{ form.category.label_tag }}
+              {{ form.category }}
+              {% if form.category.errors %}
+                <div class="text-danger small mt-1">{{ form.category.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              {{ form.description.label_tag }}
+              {{ form.description }}
+              {% if form.description.errors %}
+                <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                {{ form.amount.label_tag }}
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  {{ form.amount }}
+                </div>
+                {% if form.amount.errors %}
+                  <div class="text-danger small mt-1">{{ form.amount.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-6 mb-3">
+                {{ form.date.label_tag }}
+                {{ form.date }}
+                {% if form.date.errors %}
+                  <div class="text-danger small mt-1">{{ form.date.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{% url 'finances:dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-circle me-1"></i>{{ btn_texto }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

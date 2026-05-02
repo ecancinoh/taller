@@ -4,9 +4,16 @@
 {% block page_heading %}
 <div class="d-flex align-items-center justify-content-between mb-4">
   <h1 class="h3 mb-0 text-gray-800">{{ title }}</h1>
-  <a href="{% url 'service_orders:list' %}" class="btn btn-outline-secondary btn-sm">
-    <i class="bi bi-arrow-left me-1"></i> Volver
-  </a>
+  <div class="d-flex gap-2">
+    {% if can_upload_photos and order %}
+    <a href="{% url 'service_orders:detail' order.pk %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-share me-1"></i> Compartir con cliente
+    </a>
+    {% endif %}
+    <a href="{% url 'service_orders:list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Volver
+    </a>
+  </div>
 </div>
 {% endblock %}
 
@@ -92,6 +99,58 @@
         </form>
       </div>
     </div>
+
+    {% if can_upload_photos %}
+    <div class="card shadow-sm mt-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Fotos de la orden</h6></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'service_orders:upload_photo' order.pk %}" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'service_orders:update' order.pk %}">
+          <div class="col-12 col-md-5">
+            <label class="form-label small text-muted mb-1" for="id_image">Imagen</label>
+            {{ photo_form.image }}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label small text-muted mb-1" for="id_caption">Descripción</label>
+            {{ photo_form.caption }}
+          </div>
+          <div class="col-8 col-md-2">
+            <div class="form-check mt-3 mt-md-0">
+              {{ photo_form.is_public }}
+              <label class="form-check-label small" for="id_is_public">Visible al cliente</label>
+            </div>
+          </div>
+          <div class="col-4 col-md-1 text-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100 w-md-auto">
+              <i class="bi bi-upload me-1"></i> Subir
+            </button>
+          </div>
+        </form>
+
+        {% if photos %}
+        <div class="row g-2">
+          {% for photo in photos %}
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="{{ photo.image.url }}" target="_blank">
+              <img src="{{ photo.image.url }}" alt="{{ photo.caption }}"
+                   class="img-fluid rounded shadow-sm" style="object-fit:cover;height:100px;width:100%;">
+            </a>
+            {% if photo.caption %}<div class="small text-muted mt-1">{{ photo.caption }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-muted small">Aún no hay fotos cargadas para esta orden.</div>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-4 mb-0">
+      <i class="bi bi-info-circle me-1"></i>
+      Primero crea la orden. Después podrás subir fotos desde esta misma pantalla de edición.
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} — OS-{{ order.pk|stringformat:"04d" }}{% endblock %}
+{% block active_orders %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+      <i class="bi bi-box-seam me-2"></i>{{ titulo }}
+    </h1>
+    <a href="{% url 'service_orders:detail' order.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Volver a OS-{{ order.pk|stringformat:"04d" }}
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-9 col-lg-7">
+      <div class="card shadow">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Descripción *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Cantidad *</label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}<div class="text-danger small mt-1">{{ form.quantity.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Notas</label>
+                {{ form.notes }}
+              </div>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Precio venta *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  {{ form.unit_price }}
+                </div>
+                {% if form.unit_price.errors %}<div class="text-danger small mt-1">{{ form.unit_price.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Costo compra</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  {{ form.unit_cost }}
+                </div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+              <a href="{% url 'service_orders:detail' order.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Guardar cambios
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

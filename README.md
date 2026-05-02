@@ -1,28 +1,30 @@
 # TallerPro 🔧
 
-Sistema web de gestión para taller mecánico automotriz. Construido con **Django 5 + PostgreSQL + Bootstrap 5 + SB Admin 2**. Mobile-first, responsive y listo para producción.
+Sistema web de gestion para taller mecanico automotriz. Construido con Django 5 + PostgreSQL + Bootstrap 5 + SB Admin 2. Mobile-first, responsive y listo para despliegue.
 
 ## Características
 
 - **Gestión de clientes** — CRUD completo con búsqueda y paginación
 - **Gestión de vehículos** — Vinculados a clientes, historial completo de servicios
 - **Órdenes de servicio** — Flujo completo con estados, repuestos, mano de obra y fotos
-- **Control de acceso por roles** — Admin ve todo; Mecánico solo ve sus órdenes y sin datos financieros
+- **Control de acceso por roles** — Admin y Mecanico con vistas diferenciadas
 - **Vista pública compartible** — Enlace por UUID sin necesidad de login para el cliente
 - **Integración Gemini AI** — Asistente de diagnóstico (requiere API key)
-- **Importación CSV/VCF** — Importar contactos desde Excel o celular *(próximamente)*
+- **Gestion financiera** — Dashboard de ingresos, costos, gastos y ganancia neta
+- **Importación CSV/VCF** — Importar contactos desde Excel o celular
 
 ## Stack tecnológico
 
 | Capa | Tecnología |
 |------|-----------|
-| Backend | Django 5.1.4 + Python 3.12 |
+| Backend | Django 5.1.4 + Python 3.11+ |
 | Base de datos | PostgreSQL 15+ |
 | Frontend | Bootstrap 5 + SB Admin 2 (CDN) |
 | Autenticación | Django auth integrado con roles personalizados |
 | IA | Google Gemini 1.5 Flash |
 | Estáticos | WhiteNoise |
-| Entorno | django-environ + python-decouple |
+| Entorno | django-environ |
+| App server (prod) | Gunicorn |
 
 ## Estructura del proyecto
 
@@ -195,14 +197,59 @@ AIDiagnosticRequest ──> ServiceOrder
 - CSRF activo en todos los formularios POST
 - Variables sensibles en `.env` (excluido del repositorio)
 
-## Módulos por implementar
+## Despliegue en hosting (produccion)
 
-- [ ] Inline CRUD repuestos/labor en detalle de orden
-- [ ] Upload de fotos con previsualización
-- [ ] Importación CSV/VCF de contactos
-- [ ] Vista diagnóstico IA (Gemini)
-- [ ] Generación de ShareToken con botón "Compartir"
-- [ ] CRUD usuarios internos (solo Admin)
+### 1. Variables de entorno
+
+Configura estas variables en tu hosting:
+
+```env
+DEBUG=False
+DJANGO_SETTINGS_MODULE=taller_mecanico.settings.prod
+SECRET_KEY=tu-clave-secreta-segura
+
+ALLOWED_HOSTS=tudominio.com,www.tudominio.com
+CSRF_TRUSTED_ORIGINS=https://tudominio.com,https://www.tudominio.com
+
+DATABASE_URL=postgres://usuario:password@host:5432/nombre_db
+
+# Opcional (si usas diagnostico IA)
+GEMINI_API_KEY=tu-api-key
+```
+
+### 2. Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Migraciones y estaticos
+
+```bash
+python manage.py migrate
+python manage.py collectstatic --noinput
+```
+
+### 4. Crear superusuario
+
+```bash
+python manage.py createsuperuser
+```
+
+### 5. Iniciar aplicacion con Gunicorn
+
+```bash
+gunicorn taller_mecanico.wsgi:application --bind 0.0.0.0:8000 --workers 3
+```
+
+### 6. Reverse proxy (Nginx recomendado)
+
+- Apunta el dominio al servidor.
+- Configura proxy hacia Gunicorn.
+- Sirve /static y /media desde el sistema de archivos.
+- Habilita HTTPS.
+
+Nota: si tu hosting no envia cabeceras HTTPS correctamente, ajusta SECURE_SSL_REDIRECT en variables de entorno.
 
 ## Contribuir
 

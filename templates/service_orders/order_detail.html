@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load format_filters %}
 {% block title %}OS-{{ order.pk|stringformat:"04d" }}{% endblock %}
 {% block active_orders %}active{% endblock %}
 
@@ -11,7 +12,24 @@
     </h1>
     <small class="text-muted">{{ order.service_date|date:"d/m/Y" }}</small>
   </div>
-  <div class="d-flex gap-2">
+  <div class="d-flex flex-wrap gap-2 justify-content-end">
+    {% if share_url %}
+      <a href="{{ share_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-box-arrow-up-right me-1"></i> Ver enlace cliente
+      </a>
+      {% if whatsapp_share_url %}
+      <a href="{{ whatsapp_share_url }}" target="_blank" class="btn btn-success btn-sm">
+        <i class="bi bi-whatsapp me-1"></i> Enviar por WhatsApp
+      </a>
+      {% endif %}
+    {% else %}
+      <form method="post" action="{% url 'service_orders:share_link' order.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="bi bi-share me-1"></i> Generar enlace cliente
+        </button>
+      </form>
+    {% endif %}
     <a href="{% url 'service_orders:update' order.pk %}" class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-pencil me-1"></i> Editar
     </a>
@@ -43,7 +61,7 @@
           <a href="{% url 'vehicles:detail' order.vehicle.pk %}" class="text-decoration-none">{{ order.vehicle }}</a>
         </p>
         {% if order.vehicle.license_plate %}
-        <p class="mb-1"><i class="bi bi-tag me-1 text-muted"></i>{{ order.vehicle.license_plate }}</p>
+        <p class="mb-1"><i class="bi bi-tag me-1 text-muted"></i>{{ order.vehicle.license_plate|upper }}</p>
         {% endif %}
         {% if order.mileage %}
         <p class="mb-0"><i class="bi bi-speedometer2 me-1 text-muted"></i>{{ order.mileage|floatformat:"0" }} km</p>
@@ -59,6 +77,39 @@
       </div>
     </div>
 
+    <!-- Enlace para cliente -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Compartir con cliente</h6></div>
+      <div class="card-body small">
+        {% if share_url %}
+          <div class="input-group input-group-sm mb-2">
+            <input type="text" class="form-control" id="share-link-input" value="{{ share_url }}" readonly>
+            <button class="btn btn-outline-secondary" type="button" id="copy-share-link">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ share_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+              Ver página pública
+            </a>
+            {% if whatsapp_share_url %}
+            <a href="{{ whatsapp_share_url }}" target="_blank" class="btn btn-success btn-sm">
+              <i class="bi bi-whatsapp me-1"></i>Enviar por WhatsApp
+            </a>
+            {% endif %}
+          </div>
+        {% else %}
+          <form method="post" action="{% url 'service_orders:share_link' order.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="bi bi-share me-1"></i>Generar enlace para cliente
+            </button>
+          </form>
+          <div class="text-muted mt-2">Este enlace mostrará diagnóstico, trabajo realizado, recomendaciones y fotos públicas.</div>
+        {% endif %}
+      </div>
+    </div>
+
     <!-- Totales (solo admin) -->
     {% if show_financials %}
     <div class="card shadow-sm mb-4 border-danger">
@@ -68,22 +119,22 @@
       <div class="card-body small">
         <div class="d-flex justify-content-between mb-1">
           <span class="text-muted">Repuestos:</span>
-          <span class="fw-semibold">${{ order.total_parts|floatformat:"0" }}</span>
+          <span class="fw-semibold">${{ order.total_parts|thousands_dot }}</span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span class="text-muted">Mano de obra:</span>
-          <span class="fw-semibold">${{ order.total_labor|floatformat:"0" }}</span>
+          <span class="fw-semibold">${{ order.total_labor|thousands_dot }}</span>
         </div>
         <hr class="my-2">
         <div class="d-flex justify-content-between fw-bold">
           <span>Total:</span>
-          <span class="text-success fs-5">${{ order.grand_total|floatformat:"0" }}</span>
+          <span class="text-success fs-5">${{ order.grand_total|thousands_dot }}</span>
         </div>
       </div>
     </div>
 
     <!-- Notas internas -->
-    {% if order.internal_notes %}
+    {% if show_internal_notes and order.internal_notes %}
     <div class="card shadow-sm mb-4 border-warning">
       <div class="card-header py-3 bg-warning">
         <h6 class="fw-bold m-0"><i class="bi bi-sticky me-1"></i> Notas internas</h6>
@@ -129,67 +180,272 @@
     </div>
     {% endif %}
 
-    <!-- Repuestos -->
-    {% if parts %}
+    <!-- Diagnóstico IA (Gemini) -->
     <div class="card shadow-sm mb-4">
-      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Repuestos</h6></div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead class="table-light small">
-              <tr>
-                <th class="ps-3">Descripción</th>
-                <th class="text-center">Cant.</th>
-                {% if show_financials %}<th class="text-end">P. Unit.</th><th class="text-end pe-3">Subtotal</th>{% endif %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for part in parts %}
-              <tr>
-                <td class="ps-3">{{ part.name }}</td>
-                <td class="text-center">{{ part.quantity }}</td>
-                {% if show_financials %}
-                <td class="text-end">${{ part.unit_price|floatformat:"0" }}</td>
-                <td class="text-end pe-3">${{ part.subtotal|floatformat:"0" }}</td>
-                {% endif %}
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold m-0 text-primary">
+          <i class="bi bi-stars me-1"></i> Asistente diagnóstico IA
+        </h6>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'diagnostics:generate' order.pk %}">
+          {% csrf_token %}
+          <label for="id_ai_prompt" class="form-label small text-muted mb-1">
+            Prompt adicional (opcional)
+          </label>
+          <textarea
+            id="id_ai_prompt"
+            name="prompt"
+            class="form-control mb-2"
+            rows="3"
+            placeholder="Ej: El auto pierde fuerza en subida y no enciende testigo. ¿Qué pruebas priorizar?"
+          ></textarea>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="bi bi-magic me-1"></i> Generar sugerencia con Gemini
+          </button>
+        </form>
+
+        {% if last_diagnostic %}
+        <hr>
+        <div class="border rounded p-2 bg-light-subtle">
+          <div class="small text-muted mb-1">
+            {{ last_diagnostic.created_at|date:"d/m/Y H:i" }} · {{ last_diagnostic.model_used }}
+          </div>
+          <div class="small mb-1"><strong>Prompt:</strong> {{ last_diagnostic.prompt|truncatechars:120 }}</div>
+          <div class="small">
+            <strong>Respuesta:</strong>
+            <span class="ai-response-preview">{{ last_diagnostic.response|truncatechars:200 }}</span>
+            <span class="ai-response-full d-none">{{ last_diagnostic.response|linebreaksbr }}</span>
+            {% if last_diagnostic.response|length > 200 %}
+            <br>
+            <button type="button" class="btn btn-link btn-sm p-0 mt-1 ai-toggle-btn" data-expanded="false">
+              Leer más <i class="bi bi-chevron-down"></i>
+            </button>
+            {% endif %}
+          </div>
         </div>
+        {% endif %}
       </div>
     </div>
-    {% endif %}
+
+    <!-- Repuestos -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3 d-flex align-items-center justify-content-between">
+        <h6 class="fw-bold m-0 text-primary">Repuestos</h6>
+        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#formAgregarRepuesto">
+          <i class="bi bi-plus-circle me-1"></i>Agregar
+        </button>
+      </div>
+
+      <!-- Formulario agregar repuesto (colapsable) -->
+      <div class="collapse" id="formAgregarRepuesto">
+        <div class="card-body border-bottom bg-light">
+          <form method="post" action="{% url 'service_orders:part_create' order.pk %}">
+            {% csrf_token %}
+            <div class="row g-2">
+              <div class="col-12 col-md-4">
+                <label class="form-label small mb-1">Descripción *</label>
+                {{ part_form.name }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Cantidad *</label>
+                {{ part_form.quantity }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Precio venta *</label>
+                {{ part_form.unit_price }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Costo compra</label>
+                {{ part_form.unit_cost }}
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label small mb-1">Notas</label>
+                {{ part_form.notes }}
+              </div>
+            </div>
+            <div class="mt-2 text-end">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-circle me-1"></i>Guardar repuesto
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {% if parts %}
+      <div class="card-body p-0">
+        <!-- Mobile: tarjetas -->
+        <div class="d-md-none">
+          {% for part in parts %}
+          <div class="border-bottom px-3 py-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-semibold small">{{ part.name }}</div>
+                {% if part.notes %}<div class="text-muted small">{{ part.notes }}</div>{% endif %}
+              </div>
+              <div class="d-flex gap-1 ms-2">
+                <a href="{% url 'service_orders:part_update' part.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{% url 'service_orders:part_delete' part.pk %}" onsubmit="return confirm('¿Eliminar este repuesto?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </div>
+            <div class="row text-center mt-1 small">
+              <div class="col-4"><span class="text-muted">Cant.</span><br>{{ part.quantity }}</div>
+              <div class="col-4"><span class="text-muted">P. Unit.</span><br>${{ part.unit_price|thousands_dot }}</div>
+              <div class="col-4"><span class="text-muted">Subtotal</span><br><strong>${{ part.subtotal|thousands_dot }}</strong></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <!-- Desktop: tabla -->
+        <div class="d-none d-md-block">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small">
+                <tr>
+                  <th class="ps-3">Descripción</th>
+                  <th class="text-center">Cant.</th>
+                  <th class="text-end">Costo</th>
+                  <th class="text-end">P. Unit.</th>
+                  <th class="text-end pe-2">Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for part in parts %}
+                <tr>
+                  <td class="ps-3">{{ part.name }}{% if part.notes %}<br><small class="text-muted">{{ part.notes }}</small>{% endif %}</td>
+                  <td class="text-center">{{ part.quantity }}</td>
+                  <td class="text-end text-muted">${{ part.unit_cost|thousands_dot }}</td>
+                  <td class="text-end">${{ part.unit_price|thousands_dot }}</td>
+                  <td class="text-end pe-2 fw-semibold">${{ part.subtotal|thousands_dot }}</td>
+                  <td class="text-end pe-2">
+                    <a href="{% url 'service_orders:part_update' part.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-2"><i class="bi bi-pencil"></i></a>
+                    <form method="post" action="{% url 'service_orders:part_delete' part.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este repuesto?')">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="4" class="text-end fw-bold ps-3">Total repuestos:</td>
+                  <td class="text-end pe-2 fw-bold text-success">${{ order.total_parts|thousands_dot }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-body text-center text-muted py-3 small">
+        <i class="bi bi-box-seam me-1"></i>Sin repuestos. Usa el botón <strong>Agregar</strong> para añadir.
+      </div>
+      {% endif %}
+    </div>
 
     <!-- Mano de obra -->
-    {% if labors %}
     <div class="card shadow-sm mb-4">
-      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Mano de obra</h6></div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-sm mb-0">
-            <thead class="table-light small">
-              <tr>
-                <th class="ps-3">Descripción</th>
-                {% if show_financials %}<th class="text-center">Horas</th><th class="text-end pe-3">Subtotal</th>{% endif %}
-              </tr>
-            </thead>
-            <tbody>
-              {% for labor in labors %}
-              <tr>
-                <td class="ps-3">{{ labor.description }}</td>
-                {% if show_financials %}
-                <td class="text-center">{{ labor.hours }}</td>
-                <td class="text-end pe-3">${{ labor.subtotal|floatformat:"0" }}</td>
-                {% endif %}
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <div class="card-header py-3 d-flex align-items-center justify-content-between">
+        <h6 class="fw-bold m-0 text-primary">Mano de obra</h6>
+        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#formAgregarLabor">
+          <i class="bi bi-plus-circle me-1"></i>Agregar
+        </button>
+      </div>
+
+      <!-- Formulario agregar mano de obra (colapsable) -->
+      <div class="collapse" id="formAgregarLabor">
+        <div class="card-body border-bottom bg-light">
+          <form method="post" action="{% url 'service_orders:labor_create' order.pk %}">
+            {% csrf_token %}
+            <div class="row g-2">
+              <div class="col-12 col-md-7">
+                <label class="form-label small mb-1">Descripción *</label>
+                {{ labor_form.description }}
+              </div>
+              <div class="col-12 col-md-5">
+                <label class="form-label small mb-1">Monto ($) *</label>
+                {{ labor_form.price_per_hour }}
+              </div>
+            </div>
+            <div class="mt-2 text-end">
+              <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-check-circle me-1"></i>Guardar mano de obra
+              </button>
+            </div>
+          </form>
         </div>
       </div>
+
+      {% if labors %}
+      <div class="card-body p-0">
+        <!-- Mobile: tarjetas -->
+        <div class="d-md-none">
+          {% for labor in labors %}
+          <div class="border-bottom px-3 py-2">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="fw-semibold small">{{ labor.description }}</div>
+              <div class="d-flex gap-1 ms-2">
+                <a href="{% url 'service_orders:labor_update' labor.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-1"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{% url 'service_orders:labor_delete' labor.pk %}" onsubmit="return confirm('¿Eliminar esta mano de obra?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-1"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </div>
+            <div class="text-end mt-1 small fw-bold text-success">${{ labor.subtotal|thousands_dot }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <!-- Desktop: tabla -->
+        <div class="d-none d-md-block">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light small">
+                <tr>
+                  <th class="ps-3">Descripción</th>
+                  <th class="text-end pe-2">Monto</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for labor in labors %}
+                <tr>
+                  <td class="ps-3">{{ labor.description }}</td>
+                  <td class="text-end pe-2 fw-semibold">${{ labor.subtotal|thousands_dot }}</td>
+                  <td class="text-end pe-2">
+                    <a href="{% url 'service_orders:labor_update' labor.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-2"><i class="bi bi-pencil"></i></a>
+                    <form method="post" action="{% url 'service_orders:labor_delete' labor.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta mano de obra?')">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td class="text-end fw-bold ps-3">Total mano de obra:</td>
+                  <td class="text-end pe-2 fw-bold text-success">${{ order.total_labor|thousands_dot }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-body text-center text-muted py-3 small">
+        <i class="bi bi-tools me-1"></i>Sin mano de obra. Usa el botón <strong>Agregar</strong> para añadir.
+      </div>
+      {% endif %}
     </div>
-    {% endif %}
 
     <!-- Recomendaciones -->
     {% if order.recommendations %}
@@ -199,11 +455,33 @@
     </div>
     {% endif %}
 
-    <!-- Fotos -->
-    {% if photos %}
     <div class="card shadow-sm mb-4">
       <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Fotos</h6></div>
       <div class="card-body">
+        <form method="post" action="{% url 'service_orders:upload_photo' order.pk %}" enctype="multipart/form-data" class="row g-2 align-items-end mb-3">
+          {% csrf_token %}
+          <div class="col-12 col-md-5">
+            <label class="form-label small text-muted mb-1" for="id_image">Imagen</label>
+            {{ photo_form.image }}
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label small text-muted mb-1" for="id_caption">Descripción</label>
+            {{ photo_form.caption }}
+          </div>
+          <div class="col-8 col-md-2">
+            <div class="form-check mt-3 mt-md-0">
+              {{ photo_form.is_public }}
+              <label class="form-check-label small" for="id_is_public">Visible al cliente</label>
+            </div>
+          </div>
+          <div class="col-4 col-md-1 text-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100 w-md-auto">
+              <i class="bi bi-upload me-1"></i> Subir
+            </button>
+          </div>
+        </form>
+
+        {% if photos %}
         <div class="row g-2">
           {% for photo in photos %}
           <div class="col-6 col-sm-4 col-md-3">
@@ -215,10 +493,64 @@
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-muted small">
+          Aún no hay fotos cargadas para esta orden.
+        </div>
+        {% endif %}
       </div>
     </div>
-    {% endif %}
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  // Toggle "Leer más / Leer menos" en diagnósticos IA
+  document.querySelectorAll('.ai-toggle-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const wrapper = btn.closest('.small');
+      const preview = wrapper.querySelector('.ai-response-preview');
+      const full = wrapper.querySelector('.ai-response-full');
+      const expanded = btn.dataset.expanded === 'true';
+      if (expanded) {
+        preview.classList.remove('d-none');
+        full.classList.add('d-none');
+        btn.innerHTML = 'Leer más <i class="bi bi-chevron-down"></i>';
+        btn.dataset.expanded = 'false';
+      } else {
+        preview.classList.add('d-none');
+        full.classList.remove('d-none');
+        btn.innerHTML = 'Leer menos <i class="bi bi-chevron-up"></i>';
+        btn.dataset.expanded = 'true';
+      }
+    });
+  });
+</script>
+{% if share_url %}
+<script>
+  (function () {
+    const copyBtn = document.getElementById('copy-share-link');
+    const input = document.getElementById('share-link-input');
+    if (!copyBtn || !input) {
+      return;
+    }
+
+    copyBtn.addEventListener('click', async function () {
+      try {
+        await navigator.clipboard.writeText(input.value);
+        copyBtn.innerHTML = '<i class="bi bi-check2"></i>';
+        setTimeout(function () {
+          copyBtn.innerHTML = '<i class="bi bi-clipboard"></i>';
+        }, 1200);
+      } catch (error) {
+        input.select();
+        document.execCommand('copy');
+      }
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}

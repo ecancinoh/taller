@@ -33,7 +33,7 @@
           <dt class="col-5 text-muted">Marca</dt><dd class="col-7">{{ vehicle.brand }}</dd>
           <dt class="col-5 text-muted">Modelo</dt><dd class="col-7">{{ vehicle.model }}</dd>
           <dt class="col-5 text-muted">Año</dt><dd class="col-7">{{ vehicle.year|default:"—" }}</dd>
-          <dt class="col-5 text-muted">Patente</dt><dd class="col-7">{{ vehicle.license_plate|default:"—" }}</dd>
+          <dt class="col-5 text-muted">Patente</dt><dd class="col-7">{{ vehicle.license_plate|upper|default:"—" }}</dd>
           <dt class="col-5 text-muted">Color</dt><dd class="col-7">{{ vehicle.color|default:"—" }}</dd>
           <dt class="col-5 text-muted">Motor</dt><dd class="col-7">{{ vehicle.engine|default:"—" }}</dd>
           <dt class="col-5 text-muted">VIN</dt><dd class="col-7 text-break">{{ vehicle.vin|default:"—" }}</dd>
