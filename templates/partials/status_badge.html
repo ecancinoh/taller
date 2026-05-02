@@ -1,0 +1,18 @@
+{% load static %}
+{% with status=status %}
+  {% if status == 'PENDING' %}
+    <span class="badge bg-warning text-dark">Pendiente</span>
+  {% elif status == 'IN_PROGRESS' %}
+    <span class="badge bg-primary">En progreso</span>
+  {% elif status == 'WAITING_PARTS' %}
+    <span class="badge bg-info text-dark">Esp. repuestos</span>
+  {% elif status == 'DONE' %}
+    <span class="badge bg-success">Terminada</span>
+  {% elif status == 'DELIVERED' %}
+    <span class="badge bg-secondary">Entregada</span>
+  {% elif status == 'CANCELLED' %}
+    <span class="badge bg-danger">Cancelada</span>
+  {% else %}
+    <span class="badge bg-light text-dark">{{ status }}</span>
+  {% endif %}
+{% endwith %}

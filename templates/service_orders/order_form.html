@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_heading %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <h1 class="h3 mb-0 text-gray-800">{{ title }}</h1>
+  <a href="{% url 'service_orders:list' %}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Volver
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-10">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <!-- Vehículo, Mecánico, Estado, Fecha -->
+          <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">Información general</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Vehículo <span class="text-danger">*</span></label>
+              {{ form.vehicle }}
+              {% if form.vehicle.errors %}<div class="text-danger small mt-1">{{ form.vehicle.errors|join:", " }}</div>{% endif %}
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label fw-semibold">Mecánico <span class="text-danger">*</span></label>
+              {{ form.mechanic }}
+            </div>
+            <div class="col-6 col-sm-4">
+              <label class="form-label fw-semibold">Estado</label>
+              {{ form.status }}
+            </div>
+            <div class="col-6 col-sm-4">
+              <label class="form-label fw-semibold">Fecha</label>
+              {{ form.service_date }}
+            </div>
+            <div class="col-12 col-sm-4">
+              <label class="form-label fw-semibold">Kilometraje</label>
+              {{ form.mileage }}
+            </div>
+          </div>
+
+          <!-- Motivo del cliente -->
+          <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">Reporte del cliente</h6>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Motivo reportado <span class="text-danger">*</span></label>
+            {{ form.customer_complaint }}
+            {% if form.customer_complaint.errors %}<div class="text-danger small mt-1">{{ form.customer_complaint.errors|join:", " }}</div>{% endif %}
+          </div>
+
+          <!-- Diagnóstico y trabajo -->
+          <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">Diagnóstico y trabajo</h6>
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Observaciones del mecánico</label>
+              {{ form.mechanic_observations }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Diagnóstico</label>
+              {{ form.diagnosis }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Trabajo realizado</label>
+              {{ form.work_done }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Recomendaciones</label>
+              {{ form.recommendations }}
+            </div>
+          </div>
+
+          <!-- Notas internas (solo admin) -->
+          {% if form.internal_notes %}
+          <h6 class="fw-bold text-danger border-bottom pb-2 mb-3">
+            <i class="bi bi-lock me-1"></i> Notas internas (solo Admin)
+          </h6>
+          <div class="mb-4">
+            {{ form.internal_notes }}
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary btn-lg flex-fill">
+              <i class="bi bi-check-lg me-1"></i> {{ btn_text }}
+            </button>
+            <a href="{% url 'service_orders:list' %}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

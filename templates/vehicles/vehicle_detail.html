@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ vehicle }}{% endblock %}
+{% block active_vehicles %}active{% endblock %}
+
+{% block page_heading %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h1 class="h3 mb-0 text-gray-800">{{ vehicle }}</h1>
+    <small class="text-muted">
+      <a href="{% url 'customers:detail' vehicle.customer.pk %}" class="text-decoration-none">
+        {{ vehicle.customer.full_name }}
+      </a>
+    </small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'vehicles:update' vehicle.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i> Editar
+    </a>
+    <a href="{% url 'service_orders:create' %}?vehicle={{ vehicle.pk }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i> Nueva OS
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Ficha técnica</h6></div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5 text-muted">Marca</dt><dd class="col-7">{{ vehicle.brand }}</dd>
+          <dt class="col-5 text-muted">Modelo</dt><dd class="col-7">{{ vehicle.model }}</dd>
+          <dt class="col-5 text-muted">Año</dt><dd class="col-7">{{ vehicle.year|default:"—" }}</dd>
+          <dt class="col-5 text-muted">Patente</dt><dd class="col-7">{{ vehicle.license_plate|default:"—" }}</dd>
+          <dt class="col-5 text-muted">Color</dt><dd class="col-7">{{ vehicle.color|default:"—" }}</dd>
+          <dt class="col-5 text-muted">Motor</dt><dd class="col-7">{{ vehicle.engine|default:"—" }}</dd>
+          <dt class="col-5 text-muted">VIN</dt><dd class="col-7 text-break">{{ vehicle.vin|default:"—" }}</dd>
+        </dl>
+        {% if vehicle.notes %}
+        <hr>
+        <p class="small text-muted mb-0">{{ vehicle.notes }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between py-3">
+        <h6 class="fw-bold m-0 text-primary"><i class="bi bi-clock-history me-1"></i> Historial de servicios</h6>
+        <a href="{% url 'service_orders:create' %}?vehicle={{ vehicle.pk }}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-plus-lg"></i>
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% for order in service_orders %}
+        <a href="{% url 'service_orders:detail' order.pk %}" class="d-block p-3 border-bottom text-decoration-none hover-bg">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <span class="fw-semibold text-dark">#{{ order.pk|stringformat:"04d" }}</span>
+              <span class="text-muted small ms-2">{{ order.service_date|date:"d/m/Y" }}</span>
+              {% if order.mileage %}
+              <span class="text-muted small ms-2"><i class="bi bi-speedometer2"></i> {{ order.mileage|floatformat:"0" }} km</span>
+              {% endif %}
+            </div>
+            {% include "partials/status_badge.html" with status=order.status %}
+          </div>
+          <div class="small text-muted mt-1">{{ order.customer_complaint|truncatechars:100 }}</div>
+        </a>
+        {% empty %}
+        <div class="text-center text-muted py-4">
+          <i class="bi bi-clipboard2-x display-6 d-block mb-2"></i>
+          Sin órdenes de servicio aún.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+/* TallerPro - Custom styles */
+
+body {
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Mejoras mobile-first */
+@media (max-width: 767.98px) {
+  .sidebar {
+    /* SB Admin sidebar se oculta en mobile por defecto */
+  }
+  #content-wrapper {
+    margin-left: 0 !important;
+  }
+}
+
+/* Bordes de color en tarjetas (clase utilitaria) */
+.border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+.border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+.border-left-info    { border-left: 0.25rem solid #36b9cc !important; }
+.border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+.border-left-danger  { border-left: 0.25rem solid #e74a3b !important; }
+
+/* Scroll-to-top button */
+.scroll-to-top {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background: #4e73df;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  opacity: 0.75;
+  z-index: 1000;
+  transition: opacity 0.2s;
+}
+.scroll-to-top:hover { opacity: 1; color: #fff; }
+
+/* Sidebar brand gradient */
+.bg-gradient-primary {
+  background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+}
+
+/* Hover en filas de tabla */
+.table-hover tbody tr:hover {
+  cursor: pointer;
+  background-color: rgba(78, 115, 223, 0.05);
+}
+
+/* Topbar divider */
+.topbar-divider {
+  width: 0;
+  border-right: 1px solid #e3e6f0;
+  height: calc(4.375rem - 2rem);
+  margin: auto 1rem;
+}
+
+/* Formularios mobile: inputs más grandes */
+@media (max-width: 575.98px) {
+  .form-control,
+  .form-select {
+    font-size: 1rem;
+    padding: 0.6rem 0.75rem;
+  }
+  .btn-lg {
+    font-size: 1.05rem;
+    padding: 0.75rem 1.25rem;
+  }
+}
+
+/* Tarjetas con hover sutil */
+.card {
+  transition: box-shadow 0.15s ease;
+}
+.card:hover {
+  box-shadow: 0 0.25rem 1rem rgba(0,0,0,0.1) !important;
+}

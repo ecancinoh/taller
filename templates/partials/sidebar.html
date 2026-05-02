@@ -1,0 +1,70 @@
+{% load static %}
+<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+  <!-- Sidebar Brand -->
+  <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{% url 'core:dashboard' %}">
+    <div class="sidebar-brand-icon">
+      <i class="bi bi-wrench-adjustable-circle fs-3"></i>
+    </div>
+    <div class="sidebar-brand-text mx-3">TallerPro</div>
+  </a>
+
+  <hr class="sidebar-divider my-0">
+
+  <!-- Dashboard -->
+  <li class="nav-item {% block active_dashboard %}{% endblock %}">
+    <a class="nav-link" href="{% url 'core:dashboard' %}">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+  </li>
+
+  <hr class="sidebar-divider">
+
+  <div class="sidebar-heading">Gestión</div>
+
+  <!-- Clientes -->
+  <li class="nav-item {% block active_customers %}{% endblock %}">
+    <a class="nav-link" href="{% url 'customers:list' %}">
+      <i class="bi bi-people"></i>
+      <span>Clientes</span>
+    </a>
+  </li>
+
+  <!-- Vehículos -->
+  <li class="nav-item {% block active_vehicles %}{% endblock %}">
+    <a class="nav-link" href="{% url 'vehicles:list' %}">
+      <i class="bi bi-car-front"></i>
+      <span>Vehículos</span>
+    </a>
+  </li>
+
+  <!-- Órdenes -->
+  <li class="nav-item {% block active_orders %}{% endblock %}">
+    <a class="nav-link" href="{% url 'service_orders:list' %}">
+      <i class="bi bi-clipboard2-check"></i>
+      <span>Órdenes de servicio</span>
+    </a>
+  </li>
+
+  <!-- Solo Admin -->
+  {% if user.is_admin %}
+  <hr class="sidebar-divider">
+  <div class="sidebar-heading">Administración</div>
+
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'admin:index' %}">
+      <i class="bi bi-gear"></i>
+      <span>Panel admin</span>
+    </a>
+  </li>
+  {% endif %}
+
+  <hr class="sidebar-divider d-none d-md-block">
+
+  <!-- Toggle Sidebar -->
+  <div class="text-center d-none d-md-inline">
+    <button class="rounded-circle border-0" id="sidebarToggle" title="Colapsar menú"></button>
+  </div>
+
+</ul>

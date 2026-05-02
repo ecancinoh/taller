@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}OS-{{ order.pk|stringformat:"04d" }}{% endblock %}
+{% block active_orders %}active{% endblock %}
+
+{% block page_heading %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h1 class="h3 mb-0 text-gray-800">
+      <span class="text-muted me-2">OS-{{ order.pk|stringformat:"04d" }}</span>
+      {% include "partials/status_badge.html" with status=order.status %}
+    </h1>
+    <small class="text-muted">{{ order.service_date|date:"d/m/Y" }}</small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'service_orders:update' order.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-pencil me-1"></i> Editar
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+  <!-- Columna izquierda: info general -->
+  <div class="col-12 col-lg-4">
+
+    <!-- Cliente y Vehículo -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Vehículo y cliente</h6></div>
+      <div class="card-body small">
+        <p class="mb-1">
+          <i class="bi bi-person me-1 text-muted"></i>
+          <a href="{% url 'customers:detail' order.customer.pk %}" class="fw-semibold text-decoration-none">
+            {{ order.customer.full_name }}
+          </a>
+          {% if order.customer.phone %}
+          <a href="tel:{{ order.customer.phone }}" class="ms-2 text-muted">{{ order.customer.phone }}</a>
+          {% endif %}
+        </p>
+        <p class="mb-1">
+          <i class="bi bi-car-front me-1 text-muted"></i>
+          <a href="{% url 'vehicles:detail' order.vehicle.pk %}" class="text-decoration-none">{{ order.vehicle }}</a>
+        </p>
+        {% if order.vehicle.license_plate %}
+        <p class="mb-1"><i class="bi bi-tag me-1 text-muted"></i>{{ order.vehicle.license_plate }}</p>
+        {% endif %}
+        {% if order.mileage %}
+        <p class="mb-0"><i class="bi bi-speedometer2 me-1 text-muted"></i>{{ order.mileage|floatformat:"0" }} km</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Mecánico -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Mecánico asignado</h6></div>
+      <div class="card-body small">
+        {{ order.mechanic.get_full_name|default:order.mechanic.username|default:"Sin asignar" }}
+      </div>
+    </div>
+
+    <!-- Totales (solo admin) -->
+    {% if show_financials %}
+    <div class="card shadow-sm mb-4 border-danger">
+      <div class="card-header py-3 bg-danger text-white">
+        <h6 class="fw-bold m-0"><i class="bi bi-lock me-1"></i> Resumen financiero</h6>
+      </div>
+      <div class="card-body small">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="text-muted">Repuestos:</span>
+          <span class="fw-semibold">${{ order.total_parts|floatformat:"0" }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Mano de obra:</span>
+          <span class="fw-semibold">${{ order.total_labor|floatformat:"0" }}</span>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex justify-content-between fw-bold">
+          <span>Total:</span>
+          <span class="text-success fs-5">${{ order.grand_total|floatformat:"0" }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notas internas -->
+    {% if order.internal_notes %}
+    <div class="card shadow-sm mb-4 border-warning">
+      <div class="card-header py-3 bg-warning">
+        <h6 class="fw-bold m-0"><i class="bi bi-sticky me-1"></i> Notas internas</h6>
+      </div>
+      <div class="card-body small">{{ order.internal_notes }}</div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+  </div>
+
+  <!-- Columna derecha: detalles técnicos -->
+  <div class="col-12 col-lg-8">
+
+    <!-- Motivo del cliente -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Motivo reportado por el cliente</h6></div>
+      <div class="card-body">{{ order.customer_complaint|linebreaksbr }}</div>
+    </div>
+
+    <!-- Diagnóstico -->
+    {% if order.mechanic_observations or order.diagnosis %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Diagnóstico</h6></div>
+      <div class="card-body">
+        {% if order.mechanic_observations %}
+        <p class="text-muted small fw-semibold mb-1">Observaciones:</p>
+        <p>{{ order.mechanic_observations|linebreaksbr }}</p>
+        {% endif %}
+        {% if order.diagnosis %}
+        <p class="text-muted small fw-semibold mb-1">Diagnóstico:</p>
+        <p class="mb-0">{{ order.diagnosis|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Trabajo realizado -->
+    {% if order.work_done %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Trabajo realizado</h6></div>
+      <div class="card-body">{{ order.work_done|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Repuestos -->
+    {% if parts %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Repuestos</h6></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light small">
+              <tr>
+                <th class="ps-3">Descripción</th>
+                <th class="text-center">Cant.</th>
+                {% if show_financials %}<th class="text-end">P. Unit.</th><th class="text-end pe-3">Subtotal</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for part in parts %}
+              <tr>
+                <td class="ps-3">{{ part.name }}</td>
+                <td class="text-center">{{ part.quantity }}</td>
+                {% if show_financials %}
+                <td class="text-end">${{ part.unit_price|floatformat:"0" }}</td>
+                <td class="text-end pe-3">${{ part.subtotal|floatformat:"0" }}</td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Mano de obra -->
+    {% if labors %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Mano de obra</h6></div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead class="table-light small">
+              <tr>
+                <th class="ps-3">Descripción</th>
+                {% if show_financials %}<th class="text-center">Horas</th><th class="text-end pe-3">Subtotal</th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for labor in labors %}
+              <tr>
+                <td class="ps-3">{{ labor.description }}</td>
+                {% if show_financials %}
+                <td class="text-center">{{ labor.hours }}</td>
+                <td class="text-end pe-3">${{ labor.subtotal|floatformat:"0" }}</td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Recomendaciones -->
+    {% if order.recommendations %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Recomendaciones</h6></div>
+      <div class="card-body">{{ order.recommendations|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Fotos -->
+    {% if photos %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header py-3"><h6 class="fw-bold m-0 text-primary">Fotos</h6></div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% for photo in photos %}
+          <div class="col-6 col-sm-4 col-md-3">
+            <a href="{{ photo.image.url }}" target="_blank">
+              <img src="{{ photo.image.url }}" alt="{{ photo.caption }}"
+                   class="img-fluid rounded shadow-sm" style="object-fit:cover;height:100px;width:100%;">
+            </a>
+            {% if photo.caption %}<div class="small text-muted mt-1">{{ photo.caption }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
