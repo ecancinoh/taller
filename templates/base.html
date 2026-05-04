@@ -98,39 +98,42 @@
   <!-- SB Admin 2 JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/startbootstrap-sb-admin-2/4.1.4/js/sb-admin-2.min.js"></script>
 
-  <!-- Sidebar toggle (vanilla JS, sin jQuery) -->
+  <!-- Sidebar toggle (vanilla JS; SB Admin 2 usa .sidebar.toggled + body.sidebar-toggled) -->
   <script>
     (function () {
       const TOGGLED_KEY = 'sb-toggled';
-      const wrapper = document.getElementById('wrapper');
+      const sidebar = document.querySelector('.sidebar');
 
-      // Restaurar estado colapsado solo en desktop
+      function setToggled(on) {
+        if (!sidebar) return;
+        sidebar.classList.toggle('toggled', on);
+        document.body.classList.toggle('sidebar-toggled', on);
+      }
+
+      // Restaurar estado colapsado solo en desktop (misma semántica que sb-admin-2.js)
       if (window.innerWidth >= 768 && localStorage.getItem(TOGGLED_KEY) === '1') {
-        wrapper.classList.add('toggled');
+        setToggled(true);
       }
 
       function toggleSidebar() {
-        wrapper.classList.toggle('toggled');
-        // Persistir solo en desktop
+        if (!sidebar) return;
+        sidebar.classList.toggle('toggled');
+        document.body.classList.toggle('sidebar-toggled');
         if (window.innerWidth >= 768) {
-          localStorage.setItem(TOGGLED_KEY, wrapper.classList.contains('toggled') ? '1' : '0');
+          localStorage.setItem(TOGGLED_KEY, sidebar.classList.contains('toggled') ? '1' : '0');
         }
       }
 
-      // Botón de colapso dentro del sidebar (desktop)
       const btnDesktop = document.getElementById('sidebarToggle');
       if (btnDesktop) btnDesktop.addEventListener('click', toggleSidebar);
 
-      // Botón hamburguesa en topbar (mobile)
       const btnMobile = document.getElementById('sidebarToggleTop');
       if (btnMobile) btnMobile.addEventListener('click', toggleSidebar);
 
-      // En mobile: cerrar sidebar al hacer clic fuera de él
       document.addEventListener('click', function (e) {
-        if (window.innerWidth < 768 && wrapper.classList.contains('toggled')) {
-          const sidebar = document.querySelector('.sidebar');
-          if (sidebar && !sidebar.contains(e.target) && btnMobile && !btnMobile.contains(e.target)) {
-            wrapper.classList.remove('toggled');
+        if (window.innerWidth < 768 && sidebar && !sidebar.classList.contains('toggled')) {
+          if (!sidebar.contains(e.target) && btnMobile && !btnMobile.contains(e.target)) {
+            setToggled(true);
           }
         }
       });
