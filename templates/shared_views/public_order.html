@@ -116,8 +116,8 @@
       <div class="row g-2">
         {% for photo in photos %}
         <div class="col-6">
-          <a href="{{ photo.image.url }}" target="_blank">
-            <img src="{{ photo.image.url }}" alt="{{ photo.caption }}"
+          <a href="{% url 'shared_views:public_order_photo' order.share_token.token photo.pk %}" target="_blank">
+            <img src="{% url 'shared_views:public_order_photo' order.share_token.token photo.pk %}" alt="{{ photo.caption }}"
                  class="img-fluid rounded shadow-sm" style="object-fit:cover;height:120px;width:100%;">
           </a>
           {% if photo.caption %}<div class="small text-muted mt-1">{{ photo.caption }}</div>{% endif %}

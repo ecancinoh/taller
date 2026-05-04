@@ -1,5 +1,8 @@
+import mimetypes
+
+from django.views import View
 from django.views.generic import DetailView
-from django.http import Http404
+from django.http import Http404, FileResponse
 from apps.service_orders.models import ShareToken
 
 
@@ -25,4 +28,22 @@ class PublicOrderView(DetailView):
         ctx['photos'] = order.photos.filter(is_public=True)
         # Nunca exponemos datos financieros ni notas internas en vista pública
         return ctx
+
+
+class PublicOrderPhotoView(View):
+    def get(self, request, token, photo_id):
+        try:
+            share = ShareToken.objects.select_related('service_order').get(token=token, is_active=True)
+        except ShareToken.DoesNotExist:
+            raise Http404('Enlace no válido o expirado.')
+
+        photo = share.service_order.photos.filter(pk=photo_id, is_public=True).first()
+        if not photo or not photo.image:
+            raise Http404('Foto no encontrada.')
+
+        content_type, _ = mimetypes.guess_type(photo.image.name)
+        if not content_type:
+            content_type = 'application/octet-stream'
+
+        return FileResponse(photo.image.open('rb'), content_type=content_type)
 
