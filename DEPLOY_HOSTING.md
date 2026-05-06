@@ -1,76 +1,69 @@
-# Guia de despliegue de TallerPro
+# Guia de despliegue de TallerPro en cPanel (CloudLinux Passenger)
 
-Esta guia te deja el sistema listo para subir a un hosting Linux con Python y PostgreSQL.
+Esta guia esta orientada al flujo que funciona de forma estable en hosting cPanel con Setup Python App.
 
-## 1. Preparar servidor
+## 1. Requisitos previos
 
-1. Instala Python 3.11+ y PostgreSQL.
-2. Crea la base de datos y usuario.
-3. Clona el repositorio en el servidor.
+1. Repositorio clonado en el hosting, por ejemplo en /home/usuario/repositories/taller.
+2. Base de datos PostgreSQL creada y accesible.
+3. Dominio o subdominio ya creado en cPanel.
 
-## 2. Configurar entorno
+## 2. Configurar app en Setup Python App
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Crear aplicacion con estos valores:
 
-## 3. Configurar variables de entorno
+1. Python version: 3.11.
+2. Application root: repositories/taller.
+3. Application URL: / (o seleccionar el subdominio desde el panel).
+4. Application startup file: passenger_wsgi.py.
+5. Application entry point: application.
 
-Crea tu archivo .env en raiz del proyecto:
+Nota: si tambien usas Application Manager, puede haber conflicto de configuracion. Usar un solo flujo (preferible Setup Python App).
 
-```env
-DEBUG=False
-DJANGO_SETTINGS_MODULE=taller_mecanico.settings.prod
-SECRET_KEY=tu-clave-larga-y-segura
+## 3. Variables de entorno
 
-ALLOWED_HOSTS=tudominio.com,www.tudominio.com
-CSRF_TRUSTED_ORIGINS=https://tudominio.com,https://www.tudominio.com
+Agregar en Setup Python App (Environment Variables) y/o en .env del servidor:
 
-DATABASE_URL=postgres://usuario:password@host:5432/taller_mecanico_db
-GEMINI_API_KEY=
-```
+1. DEBUG=False
+2. DJANGO_SETTINGS_MODULE=taller_mecanico.settings.prod
+3. SECRET_KEY=tu-clave-segura
+4. ALLOWED_HOSTS=tudominio.com,www.tudominio.com
+5. CSRF_TRUSTED_ORIGINS="hxxps://tudominio.com,hxxps://www.tudominio.com" (reemplazar hxxps por https)
+6. DATABASE_URL=postgres://usuario:password-url-encoded@host:5432/base
+7. GEMINI_API_KEY=
 
-## 4. Aplicar migraciones y estaticos
+Importante: DATABASE_URL debe estar en una sola linea y con password URL-encoded.
 
-```bash
-python manage.py migrate
-python manage.py collectstatic --noinput
-python manage.py check --deploy
-```
+## 4. Archivo passenger_wsgi.py
 
-## 5. Crear usuario administrador
+Debe existir en la raiz del proyecto y usar WSGI de Django, no Flask ni manage.py como modulo.
 
-```bash
-python manage.py createsuperuser
-```
+## 5. Instalar dependencias
 
-## 6. Levantar con Gunicorn
+1. En Setup Python App, agregar requirements.txt en Configuration files.
+2. Ejecutar Run Pip Install.
 
-```bash
-gunicorn taller_mecanico.wsgi:application --bind 0.0.0.0:8000 --workers 3
-```
+## 6. Migraciones y estaticos
 
-## 7. Configurar Nginx (resumen)
+En Execute python script:
 
-1. Proxy pass al puerto de Gunicorn.
-2. Alias para estaticos y media.
-3. Certificado TLS (Let's Encrypt).
+1. manage.py migrate
+2. manage.py collectstatic --noinput
 
-## 8. Checklist final
+## 7. Reinicio de app
 
-- DEBUG en False.
-- Dominio en ALLOWED_HOSTS.
-- CSRF_TRUSTED_ORIGINS con https.
-- collectstatic ejecutado.
-- Base de datos accesible desde app.
-- Respaldos programados de PostgreSQL.
+1. Usar Restart en Setup Python App.
+2. Si no toma cambios, crear/actualizar tmp/restart.txt en la raiz de la app.
 
-## 9. Comandos utiles
+## 8. Validaciones utiles
 
-```bash
-python manage.py check --deploy
-python manage.py showmigrations
-python manage.py createsuperuser
-```
+1. Probar archivo estatico de prueba (probe.txt) en document root para validar ruteo del dominio.
+2. Si probe.txt responde y el sitio da 404, revisar PassengerBaseURI y mapeo de dominio.
+3. Verificar que manage.py no haya sido sobreescrito por codigo ajeno (por ejemplo Flask).
+
+## 9. Checklist final
+
+1. Dominio correcto en ALLOWED_HOSTS y CSRF_TRUSTED_ORIGINS (con esquema https).
+2. passenger_wsgi.py apuntando a taller_mecanico.settings.prod.
+3. Dependencias instaladas en el virtualenv de la app activa.
+4. Migraciones y collectstatic ejecutados con exito.
