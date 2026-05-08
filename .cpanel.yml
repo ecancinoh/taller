@@ -1,0 +1,12 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/tallermc/repositories/taller
+    - export PUBLICPATH=/home/tallermc/public_html
+    - if [ -x /home/tallermc/virtualenv/repositories/taller/3.11/bin/python ]; then export PYBIN=/home/tallermc/virtualenv/repositories/taller/3.11/bin/python; else echo "No se encontró Python del virtualenv"; exit 1; fi
+    - $PYBIN -m pip install --upgrade pip
+    - $PYBIN -m pip install -r $DEPLOYPATH/requirements.txt
+    - $PYBIN $DEPLOYPATH/manage.py migrate --noinput
+    - $PYBIN $DEPLOYPATH/manage.py collectstatic --noinput
+    - mkdir -p $DEPLOYPATH/tmp
+    - touch $DEPLOYPATH/tmp/restart.txt
