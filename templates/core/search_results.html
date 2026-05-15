@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Búsqueda global{% endblock %}
+{% block active_dashboard %}active{% endblock %}
+
+{% block page_heading %}
+<div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
+  <div>
+    <h1 class="h3 mb-1 text-gray-800"><i class="bi bi-search me-2"></i>Búsqueda global</h1>
+    <p class="text-muted mb-0 small">Busca rápido por patente, cliente, teléfono o número de orden.</p>
+  </div>
+  <a href="{% url 'service_orders:create' %}" class="btn btn-primary align-self-start align-self-lg-auto">
+    <i class="bi bi-plus-lg me-1"></i> Nueva orden
+  </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-12 col-lg">
+        <label class="form-label small text-muted mb-1" for="search-results-query">Buscar</label>
+        <input id="search-results-query" type="search" name="q" value="{{ q }}" class="form-control" placeholder="Ej: AB1234, Juan Pérez, +569..., 152">
+      </div>
+      <div class="col-12 col-sm-auto">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-search me-1"></i> Buscar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if q %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="small text-muted">{{ result_count }} resultado{{ result_count|pluralize:"s" }} para <strong>{{ q }}</strong></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 fw-bold text-primary"><i class="bi bi-people me-1"></i> Clientes</h6>
+        <span class="badge bg-light text-dark">{{ customer_results.count }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if customer_results %}
+        <div class="list-group list-group-flush">
+          {% for customer in customer_results %}
+          <a href="{% url 'customers:detail' customer.pk %}" class="list-group-item list-group-item-action">
+            <div class="fw-semibold">{{ customer.full_name }}</div>
+            <div class="small text-muted">{{ customer.phone|default:"Sin teléfono" }}</div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-3 text-muted small">No encontré clientes con esa búsqueda.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 fw-bold text-primary"><i class="bi bi-car-front me-1"></i> Vehículos</h6>
+        <span class="badge bg-light text-dark">{{ vehicle_results.count }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if vehicle_results %}
+        <div class="list-group list-group-flush">
+          {% for vehicle in vehicle_results %}
+          <a href="{% url 'vehicles:detail' vehicle.pk %}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between gap-2">
+              <div>
+                <div class="fw-semibold">{{ vehicle }}</div>
+                <div class="small text-muted">{{ vehicle.customer.full_name }}</div>
+              </div>
+              {% if vehicle.license_plate %}
+              <span class="badge bg-secondary align-self-start">{{ vehicle.license_plate|upper }}</span>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-3 text-muted small">No encontré vehículos con esa búsqueda.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 fw-bold text-primary"><i class="bi bi-clipboard2-check me-1"></i> Órdenes</h6>
+        <span class="badge bg-light text-dark">{{ order_results.count }}</span>
+      </div>
+      <div class="card-body p-0">
+        {% if order_results %}
+        <div class="list-group list-group-flush">
+          {% for order in order_results %}
+          <a href="{% url 'service_orders:detail' order.pk %}" class="list-group-item list-group-item-action">
+            <div class="d-flex justify-content-between gap-2 align-items-start">
+              <div>
+                <div class="fw-semibold">OS-{{ order.pk|stringformat:"04d" }}</div>
+                <div class="small text-muted">{{ order.vehicle.customer.full_name }} · {{ order.vehicle }}</div>
+              </div>
+              <span class="badge bg-light text-dark">{{ order.get_status_display }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-3 text-muted small">No encontré órdenes con esa búsqueda.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card shadow-sm">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-search display-5 d-block mb-3"></i>
+    Escribe una patente, un cliente, un teléfono o un número de orden para empezar.
+  </div>
+</div>
+{% endif %}
+{% endblock %}

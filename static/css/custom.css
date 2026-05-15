@@ -2,6 +2,87 @@
 
 body {
   font-family: 'Nunito', sans-serif;
+  background: #f6f8fc;
+}
+
+body.mobile-workshop-app {
+  color: #283044;
+}
+
+.app-content-shell {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.workshop-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  padding: 0.75rem 1rem;
+}
+
+.topbar-quick-actions {
+  min-width: 0;
+}
+
+.topbar-search-form {
+  flex: 1 1 auto;
+  max-width: 40rem;
+}
+
+.topbar-search-form .input-group-text,
+.topbar-search-form .form-control,
+.topbar-search-form .btn {
+  min-height: 2.75rem;
+}
+
+.topbar-search-form .form-control {
+  font-size: 0.95rem;
+}
+
+.topbar-search-submit {
+  white-space: nowrap;
+}
+
+.topbar-order-btn {
+  min-height: 2.75rem;
+  min-width: 7rem;
+  padding-inline: 1rem;
+  white-space: nowrap;
+}
+
+.sidebar-brand-copy {
+  letter-spacing: 0.03em;
+}
+
+.btn,
+.form-control,
+.form-select,
+.input-group-text,
+.page-link {
+  border-radius: 0.8rem;
+}
+
+.btn {
+  min-height: 2.75rem;
+}
+
+.card {
+  border: 0;
+  border-radius: 1rem;
+}
+
+.card-header {
+  background: transparent;
+}
+
+.table-responsive {
+  scrollbar-width: thin;
+}
+
+.list-group-item {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
 }
 
 /* Mejoras mobile-first */
@@ -11,6 +92,48 @@ body {
   }
   #content-wrapper {
     margin-left: 0 !important;
+  }
+
+  .app-content-shell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .workshop-topbar {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .topbar-mobile-toggle {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-right: 0.25rem;
+    background: #eef3ff;
+  }
+
+  .topbar-search-form {
+    max-width: none;
+  }
+
+  .topbar-search-form .input-group {
+    flex-wrap: nowrap;
+  }
+
+  .topbar-search-submit {
+    padding-inline: 0.85rem;
+  }
+
+  .topbar-order-btn {
+    min-width: 5.5rem;
+    padding-inline: 0.85rem;
+  }
+
+  .sidebar-brand-copy {
+    display: none;
+  }
+
+  .sidebar .nav-item .nav-link {
+    padding-top: 0.95rem;
+    padding-bottom: 0.95rem;
   }
 }
 
@@ -61,14 +184,51 @@ body {
 
 /* Formularios mobile: inputs más grandes */
 @media (max-width: 575.98px) {
+  .app-content-shell {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
   .form-control,
-  .form-select {
+  .form-select,
+  .input-group-text {
     font-size: 1rem;
     padding: 0.6rem 0.75rem;
   }
+
+  .btn {
+    min-height: 2.9rem;
+  }
+
   .btn-lg {
     font-size: 1.05rem;
     padding: 0.75rem 1.25rem;
+  }
+
+  .workshop-topbar {
+    margin-bottom: 0.85rem !important;
+  }
+
+  .topbar-quick-actions {
+    gap: 0.5rem;
+  }
+
+  .topbar-search-form .btn {
+    padding-inline: 0.75rem;
+  }
+
+  .topbar-order-btn {
+    min-width: 5rem;
+    padding-inline: 0.75rem;
+  }
+
+  .h3,
+  h3 {
+    font-size: 1.45rem;
+  }
+
+  .card-body {
+    padding: 1rem;
   }
 }
 
@@ -108,5 +268,21 @@ body {
 
   .finance-kpi-icon {
     display: none;
+  }
+}
+
+@media (max-width: 375.98px) {
+  .workshop-topbar {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .topbar-search-submit {
+    display: none;
+  }
+
+  .topbar-order-btn {
+    min-width: 4.6rem;
+    padding-inline: 0.65rem;
   }
 }

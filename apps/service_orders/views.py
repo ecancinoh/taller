@@ -1,6 +1,8 @@
 from urllib.parse import quote
 
+from django import forms as django_forms
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
@@ -8,6 +10,10 @@ from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.utils import timezone
 from apps.core.mixins import MechanicRequiredMixin
+from apps.customers.models import Customer
+from apps.customers.forms import CustomerForm
+from apps.vehicles.models import Vehicle
+from apps.vehicles.forms import VehicleForm
 from .models import ServiceOrder, ServiceOrderPart, ServiceOrderLabor, ShareToken
 from .forms import ServiceOrderForm, ServiceOrderPartForm, ServiceOrderLaborForm, ServiceOrderPhotoForm
 
@@ -28,11 +34,19 @@ class ServiceOrderListView(MechanicRequiredMixin, ListView):
             qs = qs.filter(status=status)
         q = self.request.GET.get('q', '').strip()
         if q:
+            normalized_order = ''.join(ch for ch in q if ch.isdigit())
+            order_query = Q()
+            if normalized_order:
+                order_query |= Q(pk=int(normalized_order))
             qs = (
-                qs.filter(vehicle__license_plate__icontains=q) |
-                qs.filter(vehicle__brand__icontains=q) |
-                qs.filter(vehicle__customer__first_name__icontains=q) |
-                qs.filter(vehicle__customer__last_name__icontains=q)
+                qs.filter(
+                    order_query
+                    | Q(vehicle__license_plate__icontains=q)
+                    | Q(vehicle__brand__icontains=q)
+                    | Q(vehicle__customer__first_name__icontains=q)
+                    | Q(vehicle__customer__last_name__icontains=q)
+                    | Q(vehicle__customer__phone__icontains=q)
+                )
             )
         return qs.order_by('-service_date', '-created_at')
 
@@ -64,7 +78,7 @@ class ServiceOrderDetailView(MechanicRequiredMixin, DetailView):
         ctx['photo_form'] = ServiceOrderPhotoForm()
         ctx['part_form'] = ServiceOrderPartForm()
         ctx['labor_form'] = ServiceOrderLaborForm()
-        ctx['show_financials'] = True  # Mecánicos y admins ven datos financieros
+        ctx['show_financials'] = self.request.user.is_admin
         ctx['show_internal_notes'] = self.request.user.is_admin
 
         share_token = getattr(self.object, 'share_token', None)
@@ -95,9 +109,158 @@ class ServiceOrderCreateView(MechanicRequiredMixin, CreateView):
     form_class = ServiceOrderForm
     template_name = 'service_orders/order_form.html'
 
+    def _panel_is_open(self, name):
+        return self.request.POST.get(name) == '1'
+
+    def _resolve_selected_entities(self, customer_id=None, vehicle_id=None):
+        selected_customer = None
+        selected_vehicle = None
+
+        if vehicle_id:
+            try:
+                selected_vehicle = Vehicle.objects.select_related('customer').get(pk=vehicle_id)
+                selected_customer = selected_vehicle.customer
+            except (Vehicle.DoesNotExist, ValueError, TypeError):
+                selected_vehicle = None
+
+        if customer_id and not selected_customer:
+            try:
+                selected_customer = Customer.objects.get(pk=customer_id)
+            except (Customer.DoesNotExist, ValueError, TypeError):
+                selected_customer = None
+
+        return selected_customer, selected_vehicle
+
+    def _build_order_form(self, data=None, customer_id=None, vehicle_id=None):
+        return self.form_class(
+            data=data,
+            user=self.request.user,
+            customer_id=customer_id,
+            vehicle_id=vehicle_id,
+        )
+
+    def _build_customer_form(self, data=None):
+        return CustomerForm(data=data, prefix='quick_customer')
+
+    def _build_vehicle_form(self, data=None, customer_id=None):
+        vehicle_data = data.copy() if data is not None else None
+        if vehicle_data is not None and customer_id and not vehicle_data.get('quick_vehicle-customer'):
+            vehicle_data['quick_vehicle-customer'] = str(customer_id)
+
+        form = VehicleForm(data=vehicle_data, prefix='quick_vehicle', customer_id=customer_id)
+        if customer_id:
+            form.fields['customer'].widget = django_forms.HiddenInput()
+            form.fields['customer'].initial = customer_id
+        return form
+
+    def post(self, request, *args, **kwargs):
+        self.object = None
+        action = request.POST.get('action', 'create_order')
+        current_customer_id = request.POST.get('quick_vehicle-customer') or request.GET.get('customer')
+        current_vehicle_id = request.GET.get('vehicle')
+        selected_customer, selected_vehicle = self._resolve_selected_entities(current_customer_id, current_vehicle_id)
+        open_quick_customer = self._panel_is_open('ui_quick_customer_open')
+        open_quick_vehicle = self._panel_is_open('ui_quick_vehicle_open')
+        open_advanced_fields = self._panel_is_open('ui_advanced_open')
+
+        if action == 'quick_customer':
+            customer_form = self._build_customer_form(request.POST)
+            order_form = self._build_order_form(
+                data=request.POST,
+                customer_id=selected_customer.pk if selected_customer else None,
+                vehicle_id=selected_vehicle.pk if selected_vehicle else None,
+            )
+            if customer_form.is_valid():
+                customer = customer_form.save(commit=False)
+                customer.created_by = request.user
+                customer.save()
+                messages.success(request, 'Cliente creado y seleccionado para la orden.')
+                return self.render_to_response(
+                    self.get_context_data(
+                        form=self._build_order_form(data=request.POST, customer_id=customer.pk),
+                        customer_form=self._build_customer_form(),
+                        vehicle_form=self._build_vehicle_form(customer_id=customer.pk),
+                        selected_customer=customer,
+                        selected_vehicle=None,
+                        open_quick_vehicle=True,
+                        open_advanced_fields=open_advanced_fields,
+                    )
+                )
+
+            return self.render_to_response(
+                self.get_context_data(
+                    form=order_form,
+                    customer_form=customer_form,
+                    vehicle_form=self._build_vehicle_form(customer_id=selected_customer.pk if selected_customer else None),
+                    selected_customer=selected_customer,
+                    selected_vehicle=selected_vehicle,
+                    open_quick_customer=True,
+                    open_quick_vehicle=open_quick_vehicle,
+                    open_advanced_fields=open_advanced_fields,
+                )
+            )
+
+        if action == 'quick_vehicle':
+            vehicle_form = self._build_vehicle_form(request.POST, customer_id=selected_customer.pk if selected_customer else None)
+            order_form = self._build_order_form(
+                data=request.POST,
+                customer_id=selected_customer.pk if selected_customer else None,
+                vehicle_id=selected_vehicle.pk if selected_vehicle else None,
+            )
+
+            if vehicle_form.is_valid():
+                vehicle = vehicle_form.save()
+                order_data = request.POST.copy()
+                order_data['vehicle'] = str(vehicle.pk)
+                messages.success(request, 'Vehículo creado y seleccionado para la orden.')
+                return self.render_to_response(
+                    self.get_context_data(
+                        form=self._build_order_form(data=order_data, customer_id=vehicle.customer_id, vehicle_id=vehicle.pk),
+                        customer_form=self._build_customer_form(),
+                        vehicle_form=self._build_vehicle_form(customer_id=vehicle.customer_id),
+                        selected_customer=vehicle.customer,
+                        selected_vehicle=vehicle,
+                        open_advanced_fields=open_advanced_fields,
+                    )
+                )
+
+            return self.render_to_response(
+                self.get_context_data(
+                    form=order_form,
+                    customer_form=self._build_customer_form(),
+                    vehicle_form=vehicle_form,
+                    selected_customer=selected_customer,
+                    selected_vehicle=selected_vehicle,
+                    open_quick_vehicle=True,
+                    open_quick_customer=open_quick_customer,
+                    open_advanced_fields=open_advanced_fields,
+                )
+            )
+
+        return super().post(request, *args, **kwargs)
+
+    def form_invalid(self, form):
+        customer_id = self.request.POST.get('quick_vehicle-customer') or self.request.GET.get('customer')
+        vehicle_id = self.request.POST.get('vehicle') or self.request.GET.get('vehicle')
+        selected_customer, selected_vehicle = self._resolve_selected_entities(customer_id, vehicle_id)
+        return self.render_to_response(
+            self.get_context_data(
+                form=form,
+                customer_form=self._build_customer_form(self.request.POST),
+                vehicle_form=self._build_vehicle_form(self.request.POST, customer_id=selected_customer.pk if selected_customer else None),
+                selected_customer=selected_customer,
+                selected_vehicle=selected_vehicle,
+                open_quick_customer=self._panel_is_open('ui_quick_customer_open'),
+                open_quick_vehicle=self._panel_is_open('ui_quick_vehicle_open'),
+                open_advanced_fields=self._panel_is_open('ui_advanced_open'),
+            )
+        )
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['customer_id'] = self.request.GET.get('customer')
+        kwargs['vehicle_id'] = self.request.GET.get('vehicle')
         return kwargs
 
     def form_valid(self, form):
@@ -109,9 +272,23 @@ class ServiceOrderCreateView(MechanicRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        customer_id = self.request.GET.get('customer')
+        vehicle_id = self.request.GET.get('vehicle')
+        selected_customer, selected_vehicle = self._resolve_selected_entities(customer_id, vehicle_id)
+
         ctx['title'] = 'Nueva orden de servicio'
         ctx['btn_text'] = 'Crear orden'
         ctx['can_upload_photos'] = False
+        ctx['selected_customer'] = kwargs.get('selected_customer', selected_customer)
+        ctx['selected_vehicle'] = kwargs.get('selected_vehicle', selected_vehicle)
+        ctx['customer_form'] = kwargs.get('customer_form', self._build_customer_form())
+        ctx['vehicle_form'] = kwargs.get(
+            'vehicle_form',
+            self._build_vehicle_form(customer_id=ctx['selected_customer'].pk if ctx['selected_customer'] else None),
+        )
+        ctx['open_quick_customer'] = kwargs.get('open_quick_customer', False)
+        ctx['open_quick_vehicle'] = kwargs.get('open_quick_vehicle', False)
+        ctx['open_advanced_fields'] = kwargs.get('open_advanced_fields', False)
         return ctx
 
 

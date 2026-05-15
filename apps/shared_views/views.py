@@ -10,6 +10,14 @@ class PublicOrderView(DetailView):
     template_name = 'shared_views/public_order.html'
     context_object_name = 'order'
 
+    STATUS_STEPS = [
+        ('PENDING', 'Recepción'),
+        ('IN_PROGRESS', 'Trabajo en curso'),
+        ('WAITING_PARTS', 'Esperando repuestos'),
+        ('DONE', 'Trabajo terminado'),
+        ('DELIVERED', 'Entregado'),
+    ]
+
     def get_object(self):
         token_str = self.kwargs.get('token')
         try:
@@ -26,6 +34,20 @@ class PublicOrderView(DetailView):
         order = self.object
         ctx['parts'] = order.parts.all()
         ctx['photos'] = order.photos.filter(is_public=True)
+        current_index = 0
+        for index, (value, _) in enumerate(self.STATUS_STEPS):
+            if value == order.status:
+                current_index = index
+                break
+        ctx['status_steps'] = [
+            {
+                'value': value,
+                'label': label,
+                'is_current': order.status == value,
+                'is_complete': index <= current_index,
+            }
+            for index, (value, label) in enumerate(self.STATUS_STEPS)
+        ]
         # Nunca exponemos datos financieros ni notas internas en vista pública
         return ctx
 

@@ -5,4 +5,5 @@ app_name = 'core'
 
 urlpatterns = [
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('buscar/', views.GlobalSearchView.as_view(), name='search'),
 ]

@@ -82,7 +82,7 @@ class ServiceOrderPart(TimeStampedModel):
     )
     name = models.CharField(max_length=200, verbose_name='Repuesto')
     quantity = models.DecimalField(max_digits=8, decimal_places=2, default=1, verbose_name='Cantidad')
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio unitario')
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Precio unitario')
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Costo unitario')
     notes = models.CharField(max_length=255, blank=True, verbose_name='Notas')
 

@@ -28,13 +28,37 @@ class ServiceOrderForm(forms.ModelForm):
             'internal_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, customer_id=None, vehicle_id=None, **kwargs):
         super().__init__(*args, **kwargs)
         from apps.accounts.models import CustomUser
         from apps.vehicles.models import Vehicle
-        self.fields['vehicle'].queryset = Vehicle.objects.select_related('customer').order_by('brand', 'model')
+
+        vehicle_queryset = Vehicle.objects.select_related('customer').order_by('brand', 'model')
+        selected_vehicle = None
+
+        if vehicle_id:
+            try:
+                selected_vehicle = vehicle_queryset.get(pk=vehicle_id)
+            except (Vehicle.DoesNotExist, ValueError, TypeError):
+                selected_vehicle = None
+
+        if selected_vehicle:
+            customer_id = selected_vehicle.customer_id
+            vehicle_queryset = vehicle_queryset.filter(customer_id=selected_vehicle.customer_id)
+            self.fields['vehicle'].initial = selected_vehicle.pk
+        elif customer_id:
+            vehicle_queryset = vehicle_queryset.filter(customer_id=customer_id)
+
+        self.fields['vehicle'].queryset = vehicle_queryset
         self.fields['mechanic'].queryset = CustomUser.objects.filter(is_active=True).order_by('first_name')
         self.fields['service_date'].input_formats = ['%Y-%m-%d', '%d/%m/%Y']
+        self.fields['vehicle'].empty_label = 'Selecciona un vehículo'
+        self.fields['customer_complaint'].help_text = 'Anota la falla o lo que te pide revisar el cliente.'
+        self.fields['mechanic_observations'].widget.attrs['placeholder'] = 'Lo que notas al recibir el vehículo'
+        self.fields['diagnosis'].widget.attrs['placeholder'] = 'Diagnóstico inicial o pruebas realizadas'
+        self.fields['work_done'].widget.attrs['placeholder'] = 'Qué trabajo se hizo'
+        self.fields['recommendations'].widget.attrs['placeholder'] = 'Sugerencias para el cliente'
+        self.selected_customer_id = customer_id
 
         # Campos financieros e internos: solo para admin
         if user and not user.is_admin:
@@ -64,6 +88,19 @@ class ServiceOrderPartForm(forms.ModelForm):
             'unit_cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'notes': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['quantity'].required = False
+        self.fields['unit_price'].required = False
+
+    def clean_quantity(self):
+        quantity = self.cleaned_data.get('quantity')
+        return quantity if quantity is not None else 1
+
+    def clean_unit_price(self):
+        unit_price = self.cleaned_data.get('unit_price')
+        return unit_price if unit_price is not None else 0
 
 
 class ServiceOrderLaborForm(forms.ModelForm):

@@ -28,7 +28,7 @@
             </div>
             <div class="row g-2 mb-3">
               <div class="col-6">
-                <label class="form-label fw-semibold">Cantidad *</label>
+                <label class="form-label fw-semibold">Cantidad</label>
                 {{ form.quantity }}
                 {% if form.quantity.errors %}<div class="text-danger small mt-1">{{ form.quantity.errors.0 }}</div>{% endif %}
               </div>
@@ -39,7 +39,7 @@
             </div>
             <div class="row g-2 mb-3">
               <div class="col-6">
-                <label class="form-label fw-semibold">Precio venta *</label>
+                <label class="form-label fw-semibold">Precio venta</label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
                   {{ form.unit_price }}
